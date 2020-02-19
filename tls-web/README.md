@@ -1,0 +1,1 @@
+* certs are self signed so server certificate can be used as rootCA in client side

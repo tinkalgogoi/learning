@@ -1,0 +1,122 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "audit.logging",
+    "version": "1.0"
+  },
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/logs": {
+      "get": {
+        "operationId": "ListAuditLogs",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/serviceGetResponse"
+            }
+          }
+        },
+        "tags": [
+          "AuditLogging"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "apiPageInfo": {
+      "type": "object",
+      "properties": {
+        "page_token": {
+          "type": "string",
+          "description": "The service response should contain a string to indicate\nthe next page of resources.\nA null value indicates no more pages."
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The service may optionally include the total number of resources being paged."
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The service may optionally include the offset of the next page of resources.\nA null value indicates no more pages."
+        }
+      },
+      "description": "PageInfo represents both server-driven and client-driven pagination response.\nServer-driven pagination is a model in which the server returns some\namount of data along with an token indicating there is more data\nand where subsequent queries can get the next page of data.\nClient-driven pagination is a model in which rows are addressable by\noffset and page size (limit)."
+    },
+    "serviceAuditLog": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "action": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "app_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "user_name": {
+          "type": "string"
+        },
+        "client_ip": {
+          "type": "string"
+        },
+        "resource_desc": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "serviceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/serviceAuditLog"
+        }
+      }
+    },
+    "serviceGetResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/serviceAuditLog"
+          }
+        },
+        "page": {
+          "$ref": "#/definitions/apiPageInfo"
+        }
+      }
+    }
+  }
+}
