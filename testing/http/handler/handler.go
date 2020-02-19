@@ -1,4 +1,5 @@
-package httphandler
+// reference - https://blog.questionable.services/article/testing-http-handlers-go/
+package handler
 
 import (
 	"io"
