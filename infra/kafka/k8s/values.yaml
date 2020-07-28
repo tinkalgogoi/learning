@@ -1,20 +1,39 @@
 cp-zookeeper:
   servers: 1
+  prometheus:
+    jmx:
+      enabled: false
 
 cp-kafka:
-  brokers: 2
+  brokers: 1
+  prometheus:
+    jmx:
+      enabled: false
 
 cp-schema-registry:
-    enabled: false
+    enabled: true
+    prometheus:
+      jmx:
+        enabled: false
 
-# cp-kafka-rest:
-#     enabled: false
+cp-kafka-rest:
+    enabled: true
+    cp-zookeeper:
+        url: "my-confluent-oss-cp-zookeeper-headless.kafka:2181"
+    cp-schema-registry:
+        url: "my-confluent-oss-cp-schema-registry.kafka:8081"
+    external:
+        enabled: true
+        type: NodePort #can't specify a specific nodePort, its random
+    prometheus:
+        jmx:
+            enabled: true
 
 cp-kafka-connect: 
-    enabled: false
+  enabled: false
 
 cp-ksql-server:
   enabled: false
 
 cp-control-center:
-  enabled: false
+  enabled: true
