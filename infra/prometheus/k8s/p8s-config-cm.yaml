@@ -1,0 +1,352 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eod-monitoring-prometheus-server
+  namespace: monitoring
+data:
+  alerting_rules.yml: |
+    {}
+  alerts: |
+    {}
+  prometheus.yml: |
+    global:
+      evaluation_interval: 1m
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      # rule_files:
+      # - /etc/config/recording_rules.yml
+      # - /etc/config/alerting_rules.yml
+      # - /etc/config/rules
+      # - /etc/config/alerts
+    scrape_configs:
+    - job_name: prometheus
+      static_configs:
+      - targets:
+        - localhost:9090
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+    - job_name: kubernetes-apiservers
+      kubernetes_sd_configs:
+      - role: endpoints
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: keep
+        regex: default;kubernetes;https
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __meta_kubernetes_service_name
+        - __meta_kubernetes_endpoint_port_name
+
+    - job_name: kubernetes-nodes
+      kubernetes_sd_configs:
+      - role: node
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - replacement: strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io:443
+        target_label: __address__
+      - regex: (.+)
+        replacement: /api/v1/nodes/$1/proxy/metrics
+        source_labels:
+        - __meta_kubernetes_node_name
+        target_label: __metrics_path__
+      
+    - job_name: kubernetes-nodes-cadvisor
+      kubernetes_sd_configs:
+      - role: node
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - replacement: strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io:443
+        target_label: __address__
+      - regex: (.+)
+        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+        source_labels:
+        - __meta_kubernetes_node_name
+        target_label: __metrics_path__
+      
+    - job_name: kubernetes-service-endpoints
+      kubernetes_sd_configs:
+      - role: endpoints
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_scrape
+      - action: replace
+        regex: (https?)
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_scheme
+        target_label: __scheme__
+      - action: replace
+        regex: (.+)
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_path
+        target_label: __metrics_path__
+      - action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        source_labels:
+        - __address__
+        - __meta_kubernetes_service_annotation_prometheus_io_port
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: kubernetes_namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_service_name
+        target_label: kubernetes_name
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: kubernetes_node
+        
+    - job_name: kubernetes-service-endpoints-slow
+      kubernetes_sd_configs:
+      - role: endpoints
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_scrape_slow
+      - action: replace
+        regex: (https?)
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_scheme
+        target_label: __scheme__
+      - action: replace
+        regex: (.+)
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_path
+        target_label: __metrics_path__
+      - action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        source_labels:
+        - __address__
+        - __meta_kubernetes_service_annotation_prometheus_io_port
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: kubernetes_namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_service_name
+        target_label: kubernetes_name
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: kubernetes_node
+      scrape_interval: 5m
+      scrape_timeout: 30s
+
+    #- honor_labels: true
+      # job_name: prometheus-pushgateway
+      # kubernetes_sd_configs:
+      # - role: service
+      # relabel_configs:
+      # - action: keep
+      #   regex: pushgateway
+      #   source_labels:
+      #   - __meta_kubernetes_service_annotation_prometheus_io_probe
+    - job_name: kubernetes-services
+      kubernetes_sd_configs:
+      - role: service
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      metrics_path: /probe
+      params:
+        module:
+        - http_2xx
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+        - __meta_kubernetes_service_annotation_prometheus_io_probe
+      - source_labels:
+        - __address__
+        target_label: __param_target
+      - replacement: blackbox
+        target_label: __address__
+      - source_labels:
+        - __param_target
+        target_label: instance
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels:
+        - __meta_kubernetes_namespace
+        target_label: kubernetes_namespace
+      - source_labels:
+        - __meta_kubernetes_service_name
+        target_label: kubernetes_name
+        
+    - job_name: kubernetes-pods
+      kubernetes_sd_configs:
+      - role: pod
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        regex: ()
+        target_label: __meta_kubernetes_pod_annotation_prometheus_io_path
+        replacement: /metrics
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name, __meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_annotation_prometheus_io_path]
+        target_label: __metrics_path__
+        regex: (.+);(.+);(.+);(.+)
+        replacement: /api/v1/namespaces/$1/pods/$2:$3/proxy$4
+      - target_label: __address__
+        replacement: strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io:443
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        action: replace
+        target_label: instance
+        
+    - job_name: kubernetes-pods-slow
+      kubernetes_sd_configs:
+      - role: pod
+        api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+        tls_config:
+          insecure_skip_verify: true
+        bearer_token_file: /etc/config/aks1-token
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /etc/config/aks1-token
+      relabel_configs:
+      - action: keep
+        regex: true
+        source_labels:
+        - __meta_kubernetes_pod_annotation_prometheus_io_scrape_slow
+      - action: replace
+        regex: (.+)
+        source_labels:
+        - __meta_kubernetes_pod_annotation_prometheus_io_path
+        target_label: __metrics_path__
+      - action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        source_labels:
+        - __address__
+        - __meta_kubernetes_pod_annotation_prometheus_io_port
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: kubernetes_namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: kubernetes_pod_name
+      scrape_interval: 5m
+      scrape_timeout: 30s
+      
+    alerting:
+      alertmanagers:
+      - kubernetes_sd_configs:
+          - role: pod
+            api_server: https://strpl-dev-001-dns-b74ee0fc.hcp.westeurope.azmk8s.io
+            tls_config:
+              insecure_skip_verify: true
+            bearer_token_file: /etc/config/aks1-token
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true
+          #ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /etc/config/aks1-token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          regex: monitoring
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          regex: prometheus
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_component]
+          regex: alertmanager
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_probe]
+          regex: .*
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          regex:
+          action: drop
+  recording_rules.yml: |
+    {}
+  rules: |
+    {}
+  # get token from the other strpl-dev-001 cluster
+  aks1-token: |
+    eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJtZXRyaWNzLXNlcnZlci10b2tlbi14Ymo1OCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJtZXRyaWNzLXNlcnZlciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjgxODhiMGQ5LTFlNDMtNDE3YS1hNTlmLWFkOGUyNzllZjYxYyIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDprdWJlLXN5c3RlbTptZXRyaWNzLXNlcnZlciJ9.DXuaaCeULS-z-CZSDGSQF4BuTrv0ByXFSd4UYhvGTcLiBtRnMM8qZY-YmJ2GnAmQQmEf0xv9htyor2m9ziFiNFQxsHDE0hMpOJqWbh58q9UnELg07UaT3GFGFLj2w_48SzTlhp3mssr8p5zOha4M53fIFGYJ4R7ZYfq5rb9kqFQyEUfLdrzgf_SQBoiMg4eslwI5GtCriFZpB4xEprnNH2COW8yAuK8PARu5qTfge6HEVpoG4G7JZ_Mh5SskR3ZFh1WzKn82ZuSYCj0f92wFTbHO4dkU-h7HjxnwZ3yip8qzQsomvsOxYSySxllNdOJOfXplqm76VqllUQweOn1-Tvra0I8EDR0A2PWjtgoNKMgMCqKVsbsAiGz7tt_yC5Bu7vRtBZPTaje-5izNpC8HGQ61wxblPcF1pzGU6v7oEMBUpv9Gvmep6yDW1w0XRO9f3tG-JLInTXGDuyocJ1s9fR-RiHkRm50BzBxUO-K_JjWTf8AfrpzHOqXizsASt1dG1rZi1jVlCINpWyoEP5ySv4fx0W1JGe6PthVeawfCHt3bMK1oayFe6jg-yqgzbd_AhUhJugXzo5DGpEdXmlNxJIfED-dJAhTGr6nmdWV4OdgeyxROVS_na-ZMJpA2iPD5FT_mfHq6lloTa4hSZL5hvC-t6473wQ9v_A6oPslVnFo

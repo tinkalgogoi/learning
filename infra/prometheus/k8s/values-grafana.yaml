@@ -1,0 +1,13 @@
+persistence:
+  enabled: true
+
+# creates a sidecar which will load all the data sources, dashboards into Grafana when it gets provisioned.
+sidecar:
+  datasources:
+    enabled: true
+    label: grafana_datasource
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+
+# TODO: serve grafana on a path.
