@@ -14,7 +14,7 @@ cp-schema-registry:
     enabled: true
     prometheus:
       jmx:
-        enabled: false
+        enabled: true
 
 cp-kafka-rest:
     enabled: true
@@ -36,4 +36,7 @@ cp-ksql-server:
   enabled: false
 
 cp-control-center:
-  enabled: true
+  enabled: false
+  prometheus:
+    jmx:
+      enabled: false
